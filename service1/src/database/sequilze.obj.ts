@@ -12,7 +12,7 @@ export default SequelizeModule.forRoot({
   autoLoadModels: true,
   synchronize: true,
   models: allModels,
-  logging: true,
+  logging: false,
   define: {
     timestamps: false,
   },

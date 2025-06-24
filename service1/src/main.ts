@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
-//import 'dotenv/config';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 import * as session from 'express-session';
 import { AppModule } from './app.module';
@@ -10,9 +12,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import pathes from './config/pathes';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
-  });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.use(
     session({

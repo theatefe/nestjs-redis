@@ -1,8 +1,8 @@
-import { HttpException, HttpStatus, Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Inject } from '@nestjs/common';
 // Redis Dep ****************************************************
-import { createClient } from 'redis';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { RedisClientType } from 'redis';
 // DataAccess ****************************************************
 import { MovieDataAcceess } from '../../dataAccess/movie.dataAccess';
 // Dto ***********************************************************
@@ -10,31 +10,12 @@ import { MovieDto, movieObj, SearchMovieDto } from './../../DTO/movie.dto';
 import { CreateRatingDto } from '../../DTO/rating.dto';
 
 @Injectable()
-export class MovieService implements OnModuleInit {
-  private redisClient = createClient({
-    socket: { host: process.env.REDIS_HOST, port: parseInt(process.env.REDIS_PORT) },
-  });
-
+export class MovieService {
   constructor(
     private readonly movieDataAcceess: MovieDataAcceess,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {
-    this.initializeRedis();
-  }
-  // connect  to Redis ******************************************
-  private async initializeRedis() {
-    try {
-      await this.redisClient.connect();
-    } catch (error) {
-      throw new HttpException(
-        {
-          status: HttpStatus.INTERNAL_SERVER_ERROR,
-          error: 'خطا در اتصال به Redis',
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+    @Inject('REDIS_CLIENT') private redisClient: RedisClientType,
+  ) {}
   // seed Data **************************************************
   async onModuleInit() {
     try {
@@ -74,7 +55,7 @@ export class MovieService implements OnModuleInit {
       throw new HttpException(
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
-          error: 'خطا در جستجوی فیلم‌ها ' ,
+          error: 'خطا در جستجوی فیلم‌ها ',
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

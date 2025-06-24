@@ -16,7 +16,7 @@ import {
   ApiBody,
   ApiOperation,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 // Service ************************************************
 import { MovieService } from './movie.service';
 // DTO ****************************************************
@@ -37,7 +37,7 @@ export class MovieController {
   })
   @Get('search')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(CacheInterceptor)
   async searchMovies(
     @Query() searchDto: SearchMovieDto
   ): Promise<MovieDto[]> {
@@ -67,6 +67,7 @@ export class MovieController {
     type: CreateRatingDto,
   })
   @Post('rate')
+  @UseInterceptors(CacheInterceptor)
   @HttpCode(HttpStatus.OK)
   async rateMovie(
     @Body() createRatingDto: CreateRatingDto,
@@ -96,6 +97,7 @@ export class MovieController {
   })
   @Get('recommendations')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(CacheInterceptor)
   async getRecommendations(@Req() req): Promise<MovieDto[]> {
     try {
       const recommendations = await this.movieService.getRecommendations(req.ip);
