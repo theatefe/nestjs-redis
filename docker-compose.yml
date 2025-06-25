@@ -1,20 +1,7 @@
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    env_file:
-      - .env
-    ports:
-      - "3000:3000"
-    depends_on:
-      - redis
-
   redis:
-    image: redis:7-alpine
+    image: redis:latest
+    container_name: redis
     ports:
       - "6379:6379"
     healthcheck:
