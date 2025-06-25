@@ -12,25 +12,25 @@ import { MovieDataAcceess } from '../../dataAccess/movie.dataAccess';
       isGlobal: true,
     }),
   ],
+  controllers: [MovieController],
   providers: [
     {
       provide: 'REDIS_CLIENT',
       useFactory: async () => {
         const client = createClient({
           socket: {
-            host: process.env.REDIS_HOST || '172.18.0.3',
-            port: parseInt(process.env.REDIS_PORT) || 6379,
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
           },
         });
         await client.connect();
-        console.log('✅ Redis client connected (provider)');
+        console.log('✅ Redis client connected (movie module)');
         return client;
       },
     },
     MovieService,
     MovieDataAcceess
   ],
-  controllers: [MovieController],
   exports: [MovieService],
 })
 export class MovieModule { }

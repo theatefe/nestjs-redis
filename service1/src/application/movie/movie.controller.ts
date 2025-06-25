@@ -4,8 +4,8 @@ import {
   Query,
   Req,
   HttpStatus,
-  UseInterceptors,
   HttpException,
+  Res,
   Get,
   Body,
   HttpCode,
@@ -16,7 +16,7 @@ import {
   ApiBody,
   ApiOperation,
 } from '@nestjs/swagger';
-import { CacheInterceptor } from '@nestjs/cache-manager';
+import { Response } from 'express';
 // Service ************************************************
 import { MovieService } from './movie.service';
 // DTO ****************************************************
@@ -27,9 +27,36 @@ import { CreateRatingDto } from '../../DTO/rating.dto'
 @Controller('movies')
 export class MovieController {
   constructor(private readonly movieService: MovieService) { }
+  // Genres List ***********************************************************************************
+  @Get('genres')
+  @ApiOperation({ summary: '📊 نمایش ژانرهای موجود و تعداد فیلم‌ها در هر ژانر' })
+  @ApiOkResponse({
+    description: 'آرایه‌ای از ژانرها و تعداد فیلم‌ها در هرکدام',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          genre: { type: 'string' },
+          count: { type: 'number' }
+        }
+      }
+    }
+  })
+  async getGenres(@Res() res: Response) {
+    try {
+      const result = await this.movieService.getGenreStats();
+      res.status(200).json(result);
+    } catch (error) {
+      throw new HttpException(
+        `خطا در دریافت ژانرها: ${error}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   // search movies *********************************************************************************
   @ApiOperation({
-    summary: 'جستجوی فیلم براساس ژانر',
+    summary: '🔍 جستجوی فیلم براساس ژانر',
   })
   @ApiOkResponse({
     description: 'لیست فیلم ها',
@@ -37,13 +64,14 @@ export class MovieController {
   })
   @Get('search')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(CacheInterceptor)
   async searchMovies(
-    @Query() searchDto: SearchMovieDto
+    @Query() searchDto: SearchMovieDto,
+    @Res() res: Response,
   ): Promise<MovieDto[]> {
     try {
       const movies = await this.movieService.searchMovies(searchDto);
-      return movies;
+      res.status(200).json(movies);
+      return;
     } catch (error) {
       throw new HttpException(
         {
@@ -56,7 +84,7 @@ export class MovieController {
   }
   // Rate Movies ************************************************************************************
   @ApiOperation({
-    summary: 'امتیازدهی به فیلم',
+    summary: '⭐ امتیازدهی به فیلم',
   })
   @ApiOkResponse({
     description: 'ثبت امتیاز',
@@ -67,16 +95,17 @@ export class MovieController {
     type: CreateRatingDto,
   })
   @Post('rate')
-  @UseInterceptors(CacheInterceptor)
   @HttpCode(HttpStatus.OK)
   async rateMovie(
     @Body() createRatingDto: CreateRatingDto,
-    @Req() req
+    @Req() req,
+    @Res() res: Response,
   ): Promise<boolean> {
     try {
       const userId = req.ip;
-      await this.movieService.rateMovie(createRatingDto, userId);
-      return true;
+      const result = await this.movieService.rateMovie(createRatingDto, userId);
+      res.json(result);
+      return;
     } catch (err) {
       throw new HttpException(
         {
@@ -89,7 +118,7 @@ export class MovieController {
   }
   // Recommendations  ***********************************************************************************
   @ApiOperation({
-    summary: 'لیست فیلم‌های توصیه‌شده',
+    summary: '✨ فیلم‌های پیشنهادی مخصوص شما',
   })
   @ApiOkResponse({
     description: 'لیست فیلم‌ها',
@@ -97,11 +126,11 @@ export class MovieController {
   })
   @Get('recommendations')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(CacheInterceptor)
-  async getRecommendations(@Req() req): Promise<MovieDto[]> {
+  async getRecommendations(@Req() req, @Res() res: Response,): Promise<MovieDto[]> {
     try {
       const recommendations = await this.movieService.getRecommendations(req.ip);
-      return recommendations;
+      res.status(200).json(recommendations);
+      return;
     } catch (error) {
       throw new HttpException(
         `خطا در دریافت توصیه‌ فیلم ها: ${error}`,
@@ -109,4 +138,39 @@ export class MovieController {
       );
     }
   }
+  // Trendding ***********************************************************************************************
+  @Get('trending')
+  @ApiOperation({ summary: '🔥 لیست فیلم‌های پربازدید و محبوب' })
+  @ApiOkResponse({ description: 'لیست فیلم‌ها', type: [MovieDto] })
+  async getTrendingMovies(@Res() res: Response): Promise<MovieDto[]> {
+    try {
+      const movies = await this.movieService.getMoviesByIds();
+      res.status(200).json(movies);
+      return movies;
+    } catch (error) {
+      throw new HttpException(
+        `خطا در دریافت فیلم‌های پربازدید: ${error}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  // Recently Watched ******************************************************************************************
+  @Get('recently-watched')
+  @ApiOperation({ summary: '🎬 فیلم‌های اخیراً دیده‌شده توسط کاربر' })
+  @ApiOkResponse({ description: 'لیست فیلم‌ها', type: [MovieDto], })
+  async getRecentlyWatched(@Req() req, @Res() res: Response): Promise<MovieDto[]> {
+    try {
+      const userId = req.ip;
+      const movies = await this.movieService.getRecentlyWatchedMovies(userId);
+      res.status(200).json(movies);
+      return movies;
+    } catch (error) {
+      throw new HttpException(
+        `خطا در دریافت فیلم‌های اخیر: ${error}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+
 }

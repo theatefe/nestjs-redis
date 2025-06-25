@@ -1,31 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
-
-import * as session from 'express-session';
+import { HttpAdapterHost } from '@nestjs/core';
+import { BaseExceptionFilter } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as swaggerConfig from './config/swagger.json';
-import { ValidationPipe } from '@nestjs/common/pipes';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import pathes from './config/pathes';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
-  app.use(
-    session({
-      name: 'minio.ts',
-      secret: '68yzNk6SQuPFY#WREFDF^&%TERGH765rtgfHJ%$ERFDF@#$!dg^5r%aALM1',
-      resave: false,
-      saveUninitialized: false,
-    }),
-  );
-  app.useStaticAssets(pathes.staticFiles);
-  app.setBaseViewsDir(pathes.viewFiles);
-  app.setViewEngine('ejs');
-
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    cors: true,
+  });
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,18 +30,19 @@ async function bootstrap() {
     );
     next();
   });
-  //const env = process.env.NODE_ENV.toLowerCase();
-  const env = 'test'.toLowerCase();
-  if (env === 'test') {
-    const config = new DocumentBuilder()
-      .setTitle(swaggerConfig.title)
-      .setDescription(swaggerConfig.description)
-      .setVersion(swaggerConfig.version)
-      .addTag(swaggerConfig.tag)
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
-  }
+  const httpAdapter = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new BaseExceptionFilter(httpAdapter.httpAdapter));
+
+  const config = new DocumentBuilder()
+    .setTitle(swaggerConfig.title)
+    .setDescription(swaggerConfig.description)
+    .setVersion(swaggerConfig.version)
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
+  await app.init();
   await app.listen(3000);
 }
 bootstrap();

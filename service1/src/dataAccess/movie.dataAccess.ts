@@ -27,7 +27,7 @@ export class MovieDataAcceess {
   }
   // اضافه کردن دیتای فیلم ها به مدل ***************
   async seedMovies(movies) {
-    await Models.Movie.bulkBuild(movies);
+    await Models.Movie.bulkCreate(movies);
   }
   // یافتن تعداد فیلم های موجود در دیتابیس **********
   async countMovies() {
@@ -37,7 +37,7 @@ export class MovieDataAcceess {
   async findAllRateMovies(ratedMovieIds) {
     return await Models.Movie.findAll({
       where: { id: ratedMovieIds },
-      attributes: ['genre'],
+      attributes: ['id', 'title', 'genre'],
     })
   }
   // یافتن تمام فیلم های پیشنهادی ***********************
@@ -49,5 +49,15 @@ export class MovieDataAcceess {
       },
       attributes: ['id', 'title', 'genre'],
     })
+  }
+  // لیست ژانر فیلم ها ************************************
+  async countMoviesByGenre() {
+    return await Models.Movie.findAll({
+      attributes: [
+        'genre',
+        [Sequelize.fn('COUNT', Sequelize.col('genre')), 'count']
+      ],
+      group: ['genre']
+    });
   }
 }
